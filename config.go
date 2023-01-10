@@ -3,7 +3,7 @@ package relay
 type State int
 
 const (
-	Closed State = iota
+	Closed State = iota + 1
 	HalfOpen
 	Open
 )

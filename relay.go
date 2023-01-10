@@ -7,12 +7,14 @@ import (
 )
 
 type Relay struct {
-	config   *Config
+	config   Config
 	state    State
 	mutex    sync.RWMutex
 	expiry   time.Time
 	counters Counters
 }
+
+var relays []*Relay
 
 type Counters struct {
 	Successes uint32
@@ -28,9 +30,10 @@ func New(name string, confs ...Config) (*Relay, error) {
 	relay := new(Relay)
 
 	if len(confs) == 0 {
-		relay.config = &Config{
+		relay.config = Config{
 			Name: &name,
 		}
+		relay.setState(Closed)
 		relay.config.WithCoolDown(10)
 		relay.config.WithSuccessesThreshold(3)
 		relay.config.WithFailuresThreshold(10)
@@ -38,8 +41,9 @@ func New(name string, confs ...Config) (*Relay, error) {
 	}
 
 	for _, conf := range confs {
-		relay.config = &conf
+		relay.config = conf
 		relay.config.Name = &name
+		relay.setState(Closed)
 		if relay.config.CoolDown == nil {
 			relay.config.WithCoolDown(5)
 		}
@@ -57,6 +61,7 @@ func New(name string, confs ...Config) (*Relay, error) {
 		}
 
 	}
+	add(relay)
 	return relay, nil
 }
 
@@ -68,17 +73,34 @@ func Must(relay *Relay, err error) *Relay {
 	return relay
 }
 
+func Relays() []*Relay {
+	return relays
+}
+
+func GetRelay(name string) *Relay {
+	for _, relay := range relays {
+		if *relay.Config().Name == name {
+			return relay
+		}
+	}
+	return nil
+}
+
 func (r *Relay) State() State {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 	return r.state
 }
 
-func (r *Relay) setState(state State) {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-	r.state = state
+func (r *Relay) Config() Config {
+	return r.config
 }
+
+func add(r *Relay) {
+	relays = append(relays, r)
+}
+
+var _ *Relay = (*Relay)(nil)
 
 // Request wrapper function
 func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
@@ -128,4 +150,10 @@ func (c *Counters) clear() {
 	c.Successes = 0
 	c.Failures = 0
 	c.Requests = 0
+}
+
+func (r *Relay) setState(state State) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+	r.state = state
 }

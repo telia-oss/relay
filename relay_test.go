@@ -35,26 +35,26 @@ func TestCustomConfig(t *testing.T) {
 func TestStateTransitionWithDefaultConfig(t *testing.T) {
 	relay := Must(New("default"))
 
-	// Assert transation from Closed to Open state
+	// Assert transition from Closed to Open state
 	for i := 0; i < int(*relay.config.FailuresThreshold); i++ {
 		//  default FailuresThreshold = 10
 		fail(relay) // fail 10 times in Closed state.
 	}
 	assert.Equal(t, Open, relay.State())
 
-	// Assert transation from Open to Half-Open state.
+	// Assert transition from Open to Half-Open state.
 	fail(relay)
 	time.Sleep(time.Duration(*relay.config.CoolDown) * time.Second)
 	fail(relay)
 	assert.Equal(t, HalfOpen, relay.State())
 
-	// Assert transation from Half-Open to Closed state
+	// Assert transition from Half-Open to Closed state
 	for i := 0; i < int(*relay.config.SuccessesThreshold); i++ {
 		success(relay) // succeed 3 times
 	}
 	assert.Equal(t, Closed, relay.State())
 
-	// Assert transation from Half-Open to Open state
+	// Assert transition from Half-Open to Open state
 	relay.setState(HalfOpen)
 	fail(relay)
 	assert.Equal(t, Open, relay.State())

@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestDefualtConfig(t *testing.T) {
@@ -88,6 +90,12 @@ func fail(relay *Relay) error {
 	return nil
 }
 
+func grpcFail(relay *Relay, code codes.Code) error {
+	err := status.Errorf(code, "Internale server error")
+	relay.Relay(func() (interface{}, error) { return nil, err })
+	return nil
+}
+
 func success(relay *Relay) error {
 	relay.Relay(func() (interface{}, error) { return nil, nil })
 	return nil
@@ -111,4 +119,34 @@ func successAndCollectRejections(relay *Relay, ch chan error) {
 	}
 	wg.Wait()
 	close(ch)
+}
+
+func TestCustomErrorCodes(t *testing.T) {
+	relay := Must(New("customCodes",
+		*NewConfig().WithGrpcCodes([]codes.Code{codes.Internal})))
+
+	assert.Equal(t, []codes.Code{codes.Internal}, *relay.config.GrpcCodes)
+
+	// Assert no transition from Closed to Open state when returning errors are not gRPC errors
+	for i := 0; i < int(*relay.config.FailuresThreshold); i++ {
+		//  default FailuresThreshold = 10
+		fail(relay) // fail 10 times in Closed state.
+	}
+	assert.Equal(t, Closed, relay.State())
+
+	// Assert transition from Closed to Open state when the right gRPC error occur
+	for i := 0; i < int(*relay.config.FailuresThreshold); i++ {
+		//  default FailuresThreshold = 10
+		grpcFail(relay, codes.Internal)
+	}
+	assert.Equal(t, Open, relay.State())
+
+	// Assert no transition from Closed to Open state when the wrong gRPC error occur
+	relay.setState(Closed)
+	for i := 0; i < int(*relay.config.FailuresThreshold); i++ {
+		//  default FailuresThreshold = 10
+		grpcFail(relay, codes.InvalidArgument)
+	}
+	assert.Equal(t, Closed, relay.State())
+
 }

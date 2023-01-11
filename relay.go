@@ -4,6 +4,8 @@ import (
 	"errors"
 	"sync"
 	"time"
+
+	"google.golang.org/grpc/status"
 )
 
 type Relay struct {
@@ -96,10 +98,6 @@ func (r *Relay) Config() Config {
 	return r.config
 }
 
-func add(r *Relay) {
-	relays = append(relays, r)
-}
-
 var _ *Relay = (*Relay)(nil)
 
 // Request wrapper function
@@ -120,9 +118,12 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 		result, err := req()
 
 		if err != nil {
-			r.setState(Open)
-			// reset the request countres
-			r.counters.clear()
+			r.examineError(err, func() (interface{}, error) {
+				r.setState(Open)
+				// reset the request countres
+				r.counters.clear()
+				return nil, err
+			})
 			return nil, err
 		}
 		r.counters.Successes++
@@ -133,11 +134,14 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 	}
 	result, err := req()
 	if err != nil {
-		r.counters.Failures++
-		if r.counters.Failures >= *r.config.FailuresThreshold {
-			r.setState(Open)
-			r.expiry = time.Now().Add(time.Duration(*r.config.CoolDown) * time.Second)
-		}
+		r.examineError(err, func() (interface{}, error) {
+			r.counters.Failures++
+			if r.counters.Failures >= *r.config.FailuresThreshold {
+				r.setState(Open)
+				r.expiry = time.Now().Add(time.Duration(*r.config.CoolDown) * time.Second)
+			}
+			return nil, err
+		})
 		return nil, err
 	}
 	// reset Failures counter
@@ -156,4 +160,23 @@ func (r *Relay) setState(state State) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 	r.state = state
+}
+
+func add(r *Relay) {
+	relays = append(relays, r)
+}
+
+func (r *Relay) examineError(err error, callback func() (interface{}, error)) {
+	if r.config.GrpcCodes == nil || len(*r.config.GrpcCodes) == 0 {
+		callback()
+		return
+	}
+	for _, errorCode := range *r.config.GrpcCodes {
+		if grpcError, ok := status.FromError(err); ok {
+			if grpcError.Code() == errorCode {
+				callback()
+			}
+		}
+	}
+
 }

@@ -7,3 +7,7 @@
 - Add Relays method.
 - Add GetRelay method.
 - Improve code quality.
+
+## [0.0.3] - 11 Jan 2023.
+
+- Add WithGrpcCodes option.

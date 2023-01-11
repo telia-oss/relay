@@ -57,3 +57,15 @@ func main() {
 | Relay         | Execute circute breaker on function / handler |
 | Relays        | Returns all registered circute breakers |
 | GetRelay      | Returns circute breaker by name |
+
+## Configurations
+
+| Name          | Description   |
+| ------------- | ------------- | 
+| Name                  | Name of the circute  breaker|
+| CoolDown              | Time in seconds to transit from OPEN to HALF-OPEN state |
+| SuccessesThreshold    | Number of successful requsts to transit  from HALF-OPEN  to Closed state |
+| FailuresThreshold     | Number of failed requsts to transit from CLOSED to OPEN state |
+| HalfOpenRequestsQuota | Number of requsts allowed in HALF-OPEN  state |
+| GrpcCodes             | gRPC error codes, if no code is passed Relay will count every error. |
+| OnStateChange         | A function execute when transiting from a state to another state (WIP) |

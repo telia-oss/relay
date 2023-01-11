@@ -31,7 +31,11 @@ func main() {
 
 When defining `WithGrpcCodes` relay will ignore all erorrs which doesn't belong to the error slice passed to `WithGrpcCodes`
 ```
-import "github.com/telia-oss/relay"
+import ( 
+    "github.com/telia-oss/relay"
+    "google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+)
 
 func main() {
     circuteBreaker := relay.Must(relay.New("customCodes",

@@ -2,11 +2,13 @@ package relay
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -148,5 +150,30 @@ func TestCustomErrorCodes(t *testing.T) {
 		grpcFail(relay, codes.InvalidArgument)
 	}
 	assert.Equal(t, Closed, relay.State())
+}
+
+type stateMock struct {
+	mock.Mock
+}
+
+func (s *stateMock) OnStateChange(name string, from State, to State) {
+
+	s.Called(name, from, to)
+
+	fmt.Printf("Transiting from state: %v to state: %v", from, to)
+}
+
+func TestOnStateChange(t *testing.T) {
+
+	mockedState := stateMock{}
+	mockedState.On("OnStateChange", "custom", Closed, Open)
+
+	relay := Must(New("custom",
+		*NewConfig().WithOnStateChange(mockedState.OnStateChange)))
+	for i := 0; i < int(*relay.config.FailuresThreshold); i++ {
+		fail(relay)
+	}
+
+	mockedState.AssertCalled(t, "OnStateChange", "custom", Closed, Open)
 
 }

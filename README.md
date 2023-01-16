@@ -21,7 +21,10 @@ import "github.com/telia-oss/relay"
 
 func main() {
     circuteBreaker := relay.Must(relay.New("custom", 
-        *relay.NewConfig().WithCoolDown(20).WithFailuresThreshold(20).WithHalfOpenRequestsQuota(30).WithSuccessesThreshold(10)))
+        *relay.NewConfig().WithGrpcCodes([]codes.Code{codes.Internal}).WithOnStateChange(func(name string, from relay.State, to relay.State) {
+            fmt.Printf("State of cb %s changed from %v to %v \n", name, from, to)
+        })))
+
 
     circuteBreaker.Relay(func() (interface{}, error) { return nil, errors.New("Test error") })
 }

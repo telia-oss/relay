@@ -20,7 +20,7 @@ type Config struct {
 	FailuresThreshold *uint32
 	// number of requsts allowed in half-open state
 	HalfOpenRequestsQuota *uint32
-	OnStateChange         *func(name string, from State, to State)
+	OnStateChange         func(name string, from State, to State)
 	// gRPC error codes, if no code is passed Relay will count every error.
 	GrpcCodes *[]codes.Code
 }
@@ -50,7 +50,7 @@ func (c *Config) WithHalfOpenRequestsQuota(count uint32) *Config {
 }
 
 func (c *Config) WithOnStateChange(onStateChange func(name string, from State, to State)) *Config {
-	c.OnStateChange = &onStateChange
+	c.OnStateChange = onStateChange
 	return c
 }
 

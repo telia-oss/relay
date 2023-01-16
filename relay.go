@@ -106,6 +106,9 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 	case Open:
 		now := time.Now()
 		if r.expiry.Before(now) {
+			if r.config.OnStateChange != nil {
+				r.config.OnStateChange(*r.config.Name, r.state, HalfOpen)
+			}
 			r.setState(HalfOpen)
 		}
 		return nil, errors.New("this service circute is open")
@@ -119,6 +122,9 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 
 		if err != nil {
 			r.examineError(err, func() (interface{}, error) {
+				if r.config.OnStateChange != nil {
+					r.config.OnStateChange(*r.config.Name, r.state, Open)
+				}
 				r.setState(Open)
 				// reset the request countres
 				r.counters.clear()
@@ -128,6 +134,9 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 		}
 		r.counters.Successes++
 		if r.counters.Successes >= *r.config.SuccessesThreshold {
+			if r.config.OnStateChange != nil {
+				r.config.OnStateChange(*r.config.Name, r.state, Closed)
+			}
 			r.setState(Closed)
 		}
 		return result, err
@@ -137,6 +146,9 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 		r.examineError(err, func() (interface{}, error) {
 			r.counters.Failures++
 			if r.counters.Failures >= *r.config.FailuresThreshold {
+				if r.config.OnStateChange != nil {
+					r.config.OnStateChange(*r.config.Name, r.state, Open)
+				}
 				r.setState(Open)
 				r.expiry = time.Now().Add(time.Duration(*r.config.CoolDown) * time.Second)
 			}

@@ -71,4 +71,4 @@ func main() {
 | FailuresThreshold     | Number of failed requsts to transit from CLOSED to OPEN state |
 | HalfOpenRequestsQuota | Number of requsts allowed during HALF-OPEN  state |
 | GrpcCodes             | gRPC error codes, if no code is passed Relay will count every error |
-| OnStateChange         | A function execute when transiting from a state to another state (WIP) |
+| OnStateChange         | A function execute when transiting from a state to another state |

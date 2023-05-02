@@ -87,42 +87,6 @@ func TestHalfOpenRequestsQuota(t *testing.T) {
 	assert.Equal(t, Closed, relay.State())
 }
 
-func fail(relay *Relay) error {
-	relay.Relay(func() (interface{}, error) { return nil, errors.New("Test error") })
-	return nil
-}
-
-func grpcFail(relay *Relay, code codes.Code) error {
-	err := status.Errorf(code, "Internale server error")
-	relay.Relay(func() (interface{}, error) { return nil, err })
-	return nil
-}
-
-func success(relay *Relay) error {
-	relay.Relay(func() (interface{}, error) { return nil, nil })
-	return nil
-}
-
-func successAndCollectRejections(relay *Relay, ch chan error) {
-	var wg sync.WaitGroup
-	for i := 0; i <= 20; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			_, err := relay.Relay(func() (interface{}, error) {
-				time.Sleep(50000)
-				return nil, nil
-			})
-			if err != nil {
-				ch <- err
-			}
-		}()
-
-	}
-	wg.Wait()
-	close(ch)
-}
-
 func TestCustomErrorCodes(t *testing.T) {
 	relay := Must(New("customCodes",
 		*NewConfig().WithGrpcCodes([]codes.Code{codes.Internal})))
@@ -176,4 +140,40 @@ func TestOnStateChange(t *testing.T) {
 
 	mockedState.AssertCalled(t, "OnStateChange", "custom", Closed, Open)
 
+}
+
+func fail(relay *Relay) error {
+	relay.Relay(func() (interface{}, error) { return nil, errors.New("Test error") })
+	return nil
+}
+
+func grpcFail(relay *Relay, code codes.Code) error {
+	err := status.Errorf(code, "Internale server error")
+	relay.Relay(func() (interface{}, error) { return nil, err })
+	return nil
+}
+
+func success(relay *Relay) error {
+	relay.Relay(func() (interface{}, error) { return nil, nil })
+	return nil
+}
+
+func successAndCollectRejections(relay *Relay, ch chan error) {
+	var wg sync.WaitGroup
+	for i := 0; i <= 20; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := relay.Relay(func() (interface{}, error) {
+				time.Sleep(50000)
+				return nil, nil
+			})
+			if err != nil {
+				ch <- err
+			}
+		}()
+
+	}
+	wg.Wait()
+	close(ch)
 }

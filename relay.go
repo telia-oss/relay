@@ -11,7 +11,7 @@ var relays []*Relay
 
 func New(name string, confs ...Config) (*Relay, error) {
 	if name == "" {
-		return nil, errors.New("Relay name should be set")
+		return nil, errors.New("relay name should be set")
 	}
 
 	relay := new(Relay)
@@ -87,12 +87,18 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 	switch r.State() {
 	case Open:
 		now := time.Now()
+		/*
+		* if the circute breaker expired
+		* excute the function OnStateChange if any fucntion is attached
+		* set state to half open
+		 */
 		if r.expiry.Before(now) {
 			if r.config.OnStateChange != nil {
 				r.config.OnStateChange(*r.config.Name, r.state, HalfOpen)
 			}
 			r.setState(HalfOpen)
 		}
+		// if the circute breaker not expired return circute breaker open error
 		return nil, errors.New("this service circute is open")
 	case HalfOpen:
 		if r.counters.Requests > *r.config.HalfOpenRequestsQuota {
@@ -103,7 +109,7 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 		result, err := req()
 
 		if err != nil {
-			r.examineError(err, func() (interface{}, error) {
+			result, err = r.examineError(err, func() (interface{}, error) {
 				if r.config.OnStateChange != nil {
 					r.config.OnStateChange(*r.config.Name, r.state, Open)
 				}
@@ -112,7 +118,7 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 				r.counters.clear()
 				return nil, err
 			})
-			return nil, err
+			return result, err
 		}
 		r.counters.Successes++
 		if r.counters.Successes >= *r.config.SuccessesThreshold {
@@ -125,7 +131,7 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 	}
 	result, err := req()
 	if err != nil {
-		r.examineError(err, func() (interface{}, error) {
+		result, err = r.examineError(err, func() (interface{}, error) {
 			r.counters.Failures++
 			if r.counters.Failures >= *r.config.FailuresThreshold {
 				if r.config.OnStateChange != nil {
@@ -136,7 +142,7 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 			}
 			return nil, err
 		})
-		return nil, err
+		return result, err
 	}
 	// reset Failures counter
 	r.counters.clear()
@@ -160,17 +166,16 @@ func add(r *Relay) {
 	relays = append(relays, r)
 }
 
-func (r *Relay) examineError(err error, callback func() (interface{}, error)) {
+func (r *Relay) examineError(err error, callback func() (interface{}, error)) (interface{}, error) {
 	if r.config.GrpcCodes == nil || len(*r.config.GrpcCodes) == 0 {
-		callback()
-		return
+		return callback()
 	}
 	for _, errorCode := range *r.config.GrpcCodes {
 		if grpcError, ok := status.FromError(err); ok {
 			if grpcError.Code() == errorCode {
-				callback()
+				return callback()
 			}
 		}
 	}
-
+	return nil, err
 }

@@ -2,27 +2,12 @@ package relay
 
 import (
 	"errors"
-	"sync"
 	"time"
 
 	"google.golang.org/grpc/status"
 )
 
-type Relay struct {
-	config   Config
-	state    State
-	mutex    sync.RWMutex
-	expiry   time.Time
-	counters Counters
-}
-
 var relays []*Relay
-
-type Counters struct {
-	Successes uint32
-	Failures  uint32
-	Requests  uint32
-}
 
 func New(name string, confs ...Config) (*Relay, error) {
 	if name == "" {
@@ -46,9 +31,6 @@ func New(name string, confs ...Config) (*Relay, error) {
 		relay.config = conf
 		relay.config.Name = &name
 		relay.setState(Closed)
-		if relay.config.CoolDown == nil {
-			relay.config.WithCoolDown(5)
-		}
 		if relay.config.CoolDown == nil {
 			relay.config.WithCoolDown(5)
 		}
@@ -79,7 +61,9 @@ func Relays() []*Relay {
 	return relays
 }
 
-func GetRelay(name string) *Relay {
+var _ *Relay = (*Relay)(nil)
+
+func (r *Relay) GetRelay(name string) *Relay {
 	for _, relay := range relays {
 		if *relay.Config().Name == name {
 			return relay
@@ -97,8 +81,6 @@ func (r *Relay) State() State {
 func (r *Relay) Config() Config {
 	return r.config
 }
-
-var _ *Relay = (*Relay)(nil)
 
 // Request wrapper function
 func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {

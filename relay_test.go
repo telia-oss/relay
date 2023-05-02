@@ -142,6 +142,32 @@ func TestOnStateChange(t *testing.T) {
 
 }
 
+func TestGet(t *testing.T) {
+	relay := Must(New("default"))
+	Must(New("default2"))
+
+	cb, err := relay.Get("default")
+
+	assert.Equal(t, nil, err)
+	assert.Equal(t, "default", *cb.config.Name)
+}
+
+func TestState(t *testing.T) {
+	relay := Must(New("default"))
+
+	cbState := relay.State()
+
+	assert.Equal(t, Closed, cbState)
+}
+
+func TestConfig(t *testing.T) {
+	relay := Must(New("default"))
+
+	cbConfig := relay.Config()
+
+	assert.Equal(t, "default", *cbConfig.Name)
+}
+
 func fail(relay *Relay) error {
 	relay.Relay(func() (interface{}, error) { return nil, errors.New("Test error") })
 	return nil

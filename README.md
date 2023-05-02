@@ -59,7 +59,9 @@ func main() {
 | ------------- | ------------- | 
 | Relay         | Execute circute breaker on function / handler |
 | Relays        | Returns all registered circute breakers |
-| GetRelay      | Returns circute breaker by name |
+| Get           | Returns circute breaker by name |
+| State         | Retruns a circute breaker state|
+| Config        | Returns a circute breaker config
 
 ## Configurations
 

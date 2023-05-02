@@ -7,7 +7,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var relays []*Relay
+// var relays []*Relay
+var relays = make(map[string]*Relay)
 
 func New(name string, confs ...Config) (*Relay, error) {
 	if name == "" {
@@ -57,19 +58,21 @@ func Must(relay *Relay, err error) *Relay {
 	return relay
 }
 
-func Relays() []*Relay {
+func Relays() map[string]*Relay {
 	return relays
 }
 
 var _ *Relay = (*Relay)(nil)
 
-func (r *Relay) GetRelay(name string) *Relay {
-	for _, relay := range relays {
-		if *relay.Config().Name == name {
-			return relay
-		}
+func (r *Relay) Get(name string) (*Relay, error) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+	relay, exists := relays[name]
+	if !exists {
+		return nil, errors.New("relay not found")
 	}
-	return nil
+
+	return relay, nil
 }
 
 func (r *Relay) State() State {
@@ -163,7 +166,7 @@ func (r *Relay) setState(state State) {
 }
 
 func add(r *Relay) {
-	relays = append(relays, r)
+	relays[*r.config.Name] = r
 }
 
 func (r *Relay) examineError(err error, callback func() (interface{}, error)) (interface{}, error) {

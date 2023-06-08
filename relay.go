@@ -7,7 +7,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// var relays []*Relay
 var relays = make(map[string]*Relay)
 
 func New(name string, confs ...Config) (*Relay, error) {

@@ -14,11 +14,11 @@ type Config struct {
 	Name *string
 	// time in seconds to move from open to half-open
 	CoolDown *uint32
-	// number of successful requsts to move  from half-open to closed
+	// number of successful requests to move  from half-open to closed
 	SuccessesThreshold *uint32
-	// number of failed requsts to move from closed to open
+	// number of failed requests to move from closed to open
 	FailuresThreshold *uint32
-	// number of requsts allowed in half-open state
+	// number of requests allowed in half-open state
 	HalfOpenRequestsQuota *uint32
 	OnStateChange         func(name string, from State, to State)
 	// gRPC error codes, if no code is passed Relay will count every error.

@@ -16,7 +16,18 @@ type Relay struct {
 	counters Counters
 }
 
-var relays = make(map[string]*Relay)
+type relayRegistry struct {
+	relays map[string]*Relay
+	mutex  sync.RWMutex
+}
+
+func newRelayRegistry() *relayRegistry {
+	return &relayRegistry{
+		relays: make(map[string]*Relay),
+	}
+}
+
+var relayReg = newRelayRegistry()
 
 func New(name string, confs ...Config) (*Relay, error) {
 	if name == "" {
@@ -68,7 +79,7 @@ func New(name string, confs ...Config) (*Relay, error) {
 		}
 
 	}
-	add(relay)
+	relayReg.add(relay)
 	return relay, nil
 }
 
@@ -80,16 +91,12 @@ func Must(relay *Relay, err error) *Relay {
 	return relay
 }
 
-func Relays() map[string]*Relay {
-	return relays
-}
-
 var _ *Relay = (*Relay)(nil)
 
 func (r *Relay) Get(name string) (*Relay, error) {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-	relay, exists := relays[name]
+	relayReg.mutex.RLock()
+	defer relayReg.mutex.RUnlock()
+	relay, exists := relayReg.relays[name]
 	if !exists {
 		return nil, errors.New("relay not found")
 	}
@@ -184,8 +191,14 @@ func (r *Relay) setState(state State) {
 	r.state = state
 }
 
-func add(r *Relay) {
-	relays[*r.config.Name] = r
+func (rr *relayRegistry) add(relay *Relay) {
+	rr.mutex.Lock()
+	defer rr.mutex.Unlock()
+	rr.relays[*relay.config.Name] = relay
+}
+
+func (rr *relayRegistry) Relays() map[string]*Relay {
+	return rr.relays
 }
 
 func (r *Relay) examineError(err error, callback func() (interface{}, error)) (interface{}, error) {

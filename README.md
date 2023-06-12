@@ -68,7 +68,7 @@ func main() {
 | Name          | Description   |
 | ------------- | ------------- | 
 | Name                  | Name of the circute  breaker|
-| CoolDown              | Time in seconds to transit from OPEN to HALF-OPEN state |
+| CoolDown              | Duration, in seconds, before transitioning from the OPEN state to the HALF-OPEN state. Additionally, it determines the sliding window size for request counting. When a request exceeds this 'CoolDown' duration, it's removed from the sliding window and won't influence future state transition decisions made by the Relay |
 | SuccessesThreshold    | Number of successful requsts to transit  from HALF-OPEN  to Closed state |
 | FailuresThreshold     | Number of failed requsts to transit from CLOSED to OPEN state |
 | HalfOpenRequestsQuota | Number of requsts allowed during HALF-OPEN  state |

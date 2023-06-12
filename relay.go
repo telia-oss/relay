@@ -2,10 +2,19 @@ package relay
 
 import (
 	"errors"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc/status"
 )
+
+type Relay struct {
+	config   Config
+	state    State
+	mutex    sync.RWMutex
+	expiry   time.Time
+	counters Counters
+}
 
 var relays = make(map[string]*Relay)
 
@@ -17,20 +26,29 @@ func New(name string, confs ...Config) (*Relay, error) {
 	relay := new(Relay)
 
 	if len(confs) == 0 {
+		relay.setState(Closed)
+
 		relay.config = Config{
 			Name: &name,
 		}
-		relay.setState(Closed)
 		relay.config.WithCoolDown(10)
 		relay.config.WithSuccessesThreshold(3)
 		relay.config.WithFailuresThreshold(10)
 		relay.config.WithHalfOpenRequestsQuota(10)
+
+		relay.counters = Counters{
+			Window:      []RequestInfo{},
+			WindowWidth: time.Duration(*relay.config.CoolDown) * time.Second,
+		}
 	}
 
 	for _, conf := range confs {
 		relay.config = conf
-		relay.config.Name = &name
+
 		relay.setState(Closed)
+
+		relay.config.Name = &name
+
 		if relay.config.CoolDown == nil {
 			relay.config.WithCoolDown(5)
 		}
@@ -42,6 +60,11 @@ func New(name string, confs ...Config) (*Relay, error) {
 		}
 		if relay.config.HalfOpenRequestsQuota == nil {
 			relay.config.WithHalfOpenRequestsQuota(10)
+		}
+
+		relay.counters = Counters{
+			Window:      []RequestInfo{},
+			WindowWidth: time.Duration(*relay.config.CoolDown) * time.Second,
 		}
 
 	}
@@ -86,11 +109,12 @@ func (r *Relay) Config() Config {
 
 // Request wrapper function
 func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
+	// failures, successes := r.counters.FailuresAndSuccessesCount(r)
 	switch r.State() {
 	case Open:
 		now := time.Now()
 		/*
-		* if the circute breaker expired
+		* if the circute breaker state expired
 		* excute the function OnStateChange if any fucntion is attached
 		* set state to half open
 		 */
@@ -103,10 +127,10 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 		// if the circute breaker not expired return circute breaker open error
 		return nil, errors.New("this service circute is open")
 	case HalfOpen:
-		if r.counters.Requests > *r.config.HalfOpenRequestsQuota {
+		if r.counters.HalfOpenRequests > *r.config.HalfOpenRequestsQuota {
 			return nil, errors.New("half open request quota execceded")
 		}
-		r.counters.Requests++
+		r.counters.HalfOpenRequests++
 
 		result, err := req()
 
@@ -122,8 +146,9 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 			})
 			return result, err
 		}
-		r.counters.Successes++
-		if r.counters.Successes >= *r.config.SuccessesThreshold {
+		r.counters.Add(true)
+		_, successes := r.counters.FailuresAndSuccessesCount(r)
+		if uint32(successes) >= *r.config.SuccessesThreshold {
 			if r.config.OnStateChange != nil {
 				r.config.OnStateChange(*r.config.Name, r.state, Closed)
 			}
@@ -134,8 +159,9 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 	result, err := req()
 	if err != nil {
 		result, err = r.examineError(err, func() (interface{}, error) {
-			r.counters.Failures++
-			if r.counters.Failures >= *r.config.FailuresThreshold {
+			r.counters.Add(false)
+			failures, _ := r.counters.FailuresAndSuccessesCount(r)
+			if uint32(failures) >= *r.config.FailuresThreshold {
 				if r.config.OnStateChange != nil {
 					r.config.OnStateChange(*r.config.Name, r.state, Open)
 				}
@@ -146,21 +172,15 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 		})
 		return result, err
 	}
-	// reset Failures counter
+	// reset counters
 	r.counters.clear()
 
 	return result, err
 }
 
-func (c *Counters) clear() {
-	c.Successes = 0
-	c.Failures = 0
-	c.Requests = 0
-}
-
 func (r *Relay) setState(state State) {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 	r.state = state
 }
 

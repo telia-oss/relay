@@ -143,10 +143,10 @@ func TestOnStateChange(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	relay := Must(New("default"))
+	Must(New("default"))
 	Must(New("default2"))
 
-	cb, err := relay.Get("default")
+	cb, err := Get("default")
 
 	assert.Equal(t, nil, err)
 	assert.Equal(t, "default", *cb.config.Name)

@@ -93,17 +93,6 @@ func Must(relay *Relay, err error) *Relay {
 
 var _ *Relay = (*Relay)(nil)
 
-func (r *Relay) Get(name string) (*Relay, error) {
-	relayReg.mutex.RLock()
-	defer relayReg.mutex.RUnlock()
-	relay, exists := relayReg.relays[name]
-	if !exists {
-		return nil, errors.New("relay not found")
-	}
-
-	return relay, nil
-}
-
 func (r *Relay) State() State {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
@@ -191,16 +180,6 @@ func (r *Relay) setState(state State) {
 	r.state = state
 }
 
-func (rr *relayRegistry) add(relay *Relay) {
-	rr.mutex.Lock()
-	defer rr.mutex.Unlock()
-	rr.relays[*relay.config.Name] = relay
-}
-
-func (rr *relayRegistry) Relays() map[string]*Relay {
-	return rr.relays
-}
-
 func (r *Relay) examineError(err error, callback func() (interface{}, error)) (interface{}, error) {
 	if r.config.GrpcCodes == nil || len(*r.config.GrpcCodes) == 0 {
 		return callback()
@@ -213,4 +192,25 @@ func (r *Relay) examineError(err error, callback func() (interface{}, error)) (i
 		}
 	}
 	return nil, err
+}
+
+func (rr *relayRegistry) add(relay *Relay) {
+	rr.mutex.Lock()
+	defer rr.mutex.Unlock()
+	rr.relays[*relay.config.Name] = relay
+}
+
+func (rr *relayRegistry) Relays() map[string]*Relay {
+	return rr.relays
+}
+
+func Get(name string) (*Relay, error) {
+	relayReg.mutex.RLock()
+	defer relayReg.mutex.RUnlock()
+	relay, exists := relayReg.relays[name]
+	if !exists {
+		return nil, errors.New("relay not found")
+	}
+
+	return relay, nil
 }

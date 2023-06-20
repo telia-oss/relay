@@ -74,3 +74,34 @@ func main() {
 | HalfOpenRequestsQuota | Number of requsts allowed during HALF-OPEN  state |
 | GrpcCodes             | gRPC error codes, if no code is passed Relay will count every error |
 | OnStateChange         | A function execute when transiting from a state to another state |
+
+## gRPC Service Code Generation with protoc-gen-relay
+
+When working with numerous services in your gRPC server, you might find it challenging to manually create Relay configurations to register Relay circuit breakers for each service. The `protoc-gen-relay` is a `protoc` plugin can automate this task for you.
+
+This plugin helps you to generate the necessary Go code to register Relay circuit breakers for each of your services, saving you from the repetitive task and ensuring that all the services adhere to the same configuration pattern.
+
+Detailed instructions for installing, building, and using the `protoc-gen-relay` plugin can be found in the plugin's [README file](https://github.com/telia-oss/relay/tree/main/pkg/protoc-gen-relay/README.md).
+
+## Contributing
+
+We appreciate and welcome all contributions to the Relay project, no matter how big or small. Whether you've found a typo that needs correcting or you're considering a major addition to the codebase, your input is incredibly valuable to us.
+
+To contribute, feel free to open an issue or submit a pull request on GitHub. Your involvement helps us build a robust and dependable tool for everyone.
+
+### Testing
+
+Our commitment to robustness and scalability is strongly backed by our rigorous approach to testing. We believe that a well-tested codebase is fundamental to building reliable backend connectors. We work hard to maintain a stable and comprehensive test suite that validates the functionality of our code.
+
+When contributing, please ensure to write tests for your code and confirm that your changes do not disrupt the existing tests. This helps maintain the quality and integrity of our project. Thank you for helping us in this mission.
+
+### Commit message
+
+To keep neat commit history please follow the commit messages structure:
+
+- Feat
+- Fix
+- Chore
+- Doc
+
+Thank you!

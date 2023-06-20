@@ -31,3 +31,7 @@
 
 - Implement protoc-gen-relay.
 - Add contribution guide.
+
+## [1.0.1] - 20 Jun 2023.
+
+- Fix protoc-gen-relay generated code.

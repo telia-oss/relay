@@ -2,7 +2,7 @@ Relay is a gRPC circuit breaker and Protoc plugin designed in Go. It provides fa
 
 ## Usage
 
-### Create Circute breaker with default configuration
+### Create Circuit breaker with default configuration
 ```
 import "github.com/telia-oss/relay"
 
@@ -13,7 +13,7 @@ func main() {
 }
 ```
 
-### Create Circute breaker with custom configuration
+### Create Circuit breaker with custom configuration
 ```
 import "github.com/telia-oss/relay"
 
@@ -28,9 +28,9 @@ func main() {
 }
 ```
 
-### Create Circute breaker with custom gRPC errors
+### Create Circuit breaker with custom gRPC errors
 
-When defining `WithGrpcCodes` relay will ignore all erorrs which doesn't belong to the error slice passed to `WithGrpcCodes`
+When defining `WithGrpcCodes` relay will ignore all errors which doesn't belong to the error slice passed to `WithGrpcCodes`
 ```
 import ( 
     "github.com/telia-oss/relay"

@@ -1,4 +1,4 @@
-Relay is a gRPC circuit breaker designed in Go. It provides fault-tolerance by monitoring gRPC calls for failures and preventing further system calls once a failure threshold is reached.
+Relay is a gRPC circuit breaker and Protoc plugin designed in Go. It provides fault-tolerance by monitoring gRPC calls for failures and preventing further system calls once a failure threshold is reached.
 
 ## Usage
 

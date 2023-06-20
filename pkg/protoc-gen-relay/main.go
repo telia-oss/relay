@@ -51,7 +51,7 @@ func generateFile(gen *protogen.Plugin, file *protogen.File) {
 	g.P("\t\"github.com/telia-oss/relay\"")
 	g.P(")")
 
-	g.P("func RegisterServiceRelay(config relay.Config) *relay.Relay {")
-	g.P("\treturn relay.Must(relay.New(*config.Name, config))")
+	g.P("func RegisterServiceRelay(name string, config relay.Config) *relay.Relay {")
+	g.P("\treturn relay.Must(relay.New(name, config))")
 	g.P("}")
 }

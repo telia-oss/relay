@@ -35,6 +35,6 @@ func TestProtocGenRelay(t *testing.T) {
 	filename = strings.Replace(filename, ".proto", "_relay.pb.go", 1)
 	output, err := ioutil.ReadFile(outputDir + "/pb" + filename)
 	require.NoError(t, err)
-	require.Contains(t, string(output), "func RegisterServiceRelay(config relay.Config) *relay.Relay {")
-	require.Contains(t, string(output), "return relay.Must(relay.New(*config.Name, config))")
+	require.Contains(t, string(output), "func RegisterServiceRelay(name string, config relay.Config) *relay.Relay {")
+	require.Contains(t, string(output), "return relay.Must(relay.New(name, config))")
 }

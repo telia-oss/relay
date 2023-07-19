@@ -35,3 +35,9 @@
 ## [1.0.1] - 20 Jun 2023.
 
 - Fix protoc-gen-relay generated code.
+
+## [1.1.0] - 19 Jul 2023.
+
+- Fix: staling in half-closed state
+- Fix: gaurd against potential race conditions in counters mutations
+- Fix: clear counters to true type

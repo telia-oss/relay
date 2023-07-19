@@ -119,9 +119,10 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 				r.config.OnStateChange(*r.config.Name, r.state, HalfOpen)
 			}
 			r.setState(HalfOpen)
+		} else {
+			// if the circute breaker not expired return circute breaker open error
+			return nil, errors.New("this service circute is open")
 		}
-		// if the circute breaker not expired return circute breaker open error
-		return nil, errors.New("this service circute is open")
 	case HalfOpen:
 		if r.counters.HalfOpenRequests > *r.config.HalfOpenRequestsQuota {
 			return nil, errors.New("half open request quota execceded")
@@ -149,6 +150,8 @@ func (r *Relay) Relay(req func() (interface{}, error)) (interface{}, error) {
 				r.config.OnStateChange(*r.config.Name, r.state, Closed)
 			}
 			r.setState(Closed)
+			// reset the request countres
+			r.counters.clear()
 		}
 		return result, err
 	}

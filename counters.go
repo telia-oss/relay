@@ -52,6 +52,6 @@ func (c *Counters) clear() {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	c.Window = nil
+	c.Window = []RequestInfo{}
 	c.HalfOpenRequests = 0
 }

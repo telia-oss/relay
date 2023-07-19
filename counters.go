@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"sync"
 	"time"
 )
 
@@ -10,12 +11,16 @@ type RequestInfo struct {
 }
 
 type Counters struct {
+	mutex            sync.RWMutex
 	Window           []RequestInfo
 	WindowWidth      time.Duration
 	HalfOpenRequests uint32
 }
 
 func (c *Counters) Add(success bool) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	now := time.Now()
 	minTime := now.Add(-c.WindowWidth)
 	for len(c.Window) > 0 && c.Window[0].Timestamp.Before(minTime) {
@@ -26,6 +31,9 @@ func (c *Counters) Add(success bool) {
 }
 
 func (c *Counters) FailuresAndSuccessesCount(r *Relay) (int, int) {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
 	failures := 0
 	successes := 0
 	for _, req := range r.counters.Window {
@@ -41,6 +49,9 @@ func (c *Counters) FailuresAndSuccessesCount(r *Relay) (int, int) {
 }
 
 func (c *Counters) clear() {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	c.Window = nil
 	c.HalfOpenRequests = 0
 }
